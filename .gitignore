@@ -1,0 +1,5 @@
+.idea
+build
+dist
+amqp_ko.egg-info
+venv
