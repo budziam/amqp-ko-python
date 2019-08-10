@@ -1,0 +1,22 @@
+
+version: 2
+jobs:
+  build:
+    docker:
+      - image: circleci/python:latest
+
+    steps:
+      - checkout
+
+      - run:
+          name: Install dependencies
+          command: |
+            python3 -m venv venv
+            . venv/bin/activate
+            pip install black
+
+      - run:
+          name: Check style
+          command: |
+            . venv/bin/activate
+            black amqp_ko --check
