@@ -1,33 +1,56 @@
 import asyncio
 import json
 import logging
+from dataclasses import asdict
 from random import randint
-from typing import Dict
+from typing import Dict, List
 
 import aio_pika
-from dataclasses import asdict
 
-from amqp_ko.communication.gate import MessageGateCollection
-from amqp_ko.communication.messages import Message
-from amqp_ko.models import Consumer, Job
-from amqp_ko.utils import serializer
+from amqp_ko.exceptions import InvalidRoutingKeyException, InvalidMessageTypeException
+from amqp_ko.models import Consumer, Job, MessageGate, Message
+from amqp_ko.utils import serializer, get_header_value
 
 logger = logging.getLogger(__name__)
+
 
 X_DELAY = "x-delay"
 X_ATTEMPTS = "x-attempts"
 MAX_DELAY = 30 * 60
 
 
-def get_header_value(message: aio_pika.Message, key: str, default: any = None) -> any:
-    headers = message.headers or {}
-    return headers.get(key, default)
-
-
 def calculate_requeue_backoff(message: aio_pika.Message) -> int:
     attempts = get_header_value(message, X_ATTEMPTS, 1)
     delay = randint(1, 2 ** (3 + attempts))
     return min(MAX_DELAY, delay) * 1000
+
+
+def handle_invalid_message(message: aio_pika.IncomingMessage) -> None:
+    logger.info(
+        "Received invalid message",
+        extra={"msg_routing_key": message.routing_key, "msg_body": message.body},
+    )
+
+    message.ack()
+
+
+class MessageGateCollection:
+    def __init__(self, message_gates: List[MessageGate]):
+        self._message_gates = message_gates
+
+    def get_by_routing_key(self, routing_key: str) -> MessageGate:
+        for message_gate in self._message_gates:
+            if message_gate.routing_key == routing_key:
+                return message_gate
+
+        raise InvalidRoutingKeyException(routing_key)
+
+    def get_by_message_type(self, message_type: type) -> MessageGate:
+        for message_gate in self._message_gates:
+            if message_gate.message_type == message_type:
+                return message_gate
+
+            raise InvalidMessageTypeException(message_type)
 
 
 class AsyncConnection:
@@ -59,13 +82,14 @@ class Queue:
         consume_channel: aio_pika.Channel,
         produce_channel: aio_pika.Channel,
         delay_channel: aio_pika.Channel,
+        message_gates: MessageGateCollection,
         exchange: str,
     ) -> None:
         self._consume_channel = consume_channel
         self._produce_channel = produce_channel
         self._delay_channel = delay_channel
         self._exchange_name = exchange
-        self._messageGates = MessageGateCollection()
+        self._message_gates = message_gates
 
     async def consume(self, queue_name: str, consumers: Dict[type, Consumer]):
         await self._declare_exchange(self._consume_channel)
@@ -74,7 +98,7 @@ class Queue:
         )
 
         for message_type in consumers.keys():
-            gate = self._messageGates.get_by_message_type(message_type)
+            gate = self._message_gates.get_by_message_type(message_type)
             await queue.bind(self._exchange_name, gate.routing_key)
 
         async with queue.iterator() as iterator:
@@ -82,7 +106,7 @@ class Queue:
                 asyncio.ensure_future(self._process_message(message, consumers))
 
     async def produce(self, message: Message) -> None:
-        gate = self._messageGates.get_by_message_type(type(message))
+        gate = self._message_gates.get_by_message_type(type(message))
 
         exchange = await self._declare_exchange(self._produce_channel)
         queue_message = aio_pika.Message(
@@ -137,19 +161,13 @@ class Queue:
         consumers: Dict[type, Consumer],
     ) -> None:
         try:
-            gate = self._messageGates.get_by_routing_key(incoming_message.routing_key)
-
-            if not gate:
-                return self._handle_invalid_message(incoming_message)
-
+            gate = self._message_gates.get_by_routing_key(incoming_message.routing_key)
             consumer = consumers.get(gate.message_type)
-
-            if not consumer:
-                return self._handle_invalid_message(incoming_message)
-
             body = json.loads(incoming_message.body)
             message = gate.unmarshaller(body)
             job = Job(self, incoming_message, message)
+        except (InvalidMessageTypeException, InvalidRoutingKeyException):
+            return handle_invalid_message(incoming_message)
         except Exception:
             logger.exception(
                 "Could not unserialize message",
@@ -181,11 +199,3 @@ class Queue:
         return await channel.declare_exchange(
             name=self._exchange_name, type=aio_pika.ExchangeType.TOPIC, durable=True
         )
-
-    def _handle_invalid_message(self, message: aio_pika.IncomingMessage) -> None:
-        logger.info(
-            "Received invalid message",
-            extra={"msg_routing_key": message.routing_key, "msg_body": message.body},
-        )
-
-        message.ack()

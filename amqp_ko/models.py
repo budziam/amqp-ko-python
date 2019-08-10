@@ -2,7 +2,8 @@ import asyncio
 import json
 import logging
 from abc import abstractmethod
-from typing import List, Generic, TypeVar
+from dataclasses import dataclass
+from typing import List, Generic, TypeVar, Callable
 
 import aio_pika
 from aio_pika import MessageProcessError
@@ -11,6 +12,18 @@ from cached_property import cached_property
 logger = logging.getLogger(__name__)
 
 T = TypeVar("T")
+
+
+@dataclass(frozen=True)
+class Message:
+    pass
+
+
+@dataclass
+class MessageGate:
+    routing_key: str
+    message_type: type
+    unmarshaller: Callable[[dict], Message]
 
 
 class Job(Generic[T]):
