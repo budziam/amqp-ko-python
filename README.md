@@ -6,8 +6,7 @@ The recommended way to use AMQP Kø is to create your own queue object. The simp
 
 ### Create queue
 ```python
-from amqp_ko.factories import create_queue, create_async_connection
-from amqp_ko.models import Message, MessageGate
+from amqp_ko import create_queue, create_async_connection, Message, MessageGate
 from dataclasses import dataclass
 
 
@@ -33,7 +32,7 @@ async with create_async_connection("localhost", 5672, "rabbitmq", "rabbitmq") as
 
 ### Consume messages
 ```python
-from amqp_ko.models import Consumer, Job
+from amqp_ko import Consumer, Job
 
 
 class ConnectUserWithTopic(Consumer):

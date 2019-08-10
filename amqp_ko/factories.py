@@ -28,7 +28,7 @@ async def create_queue(
     )
 
 
-def create_async_connection(host: str, port: int, username: str, password: str) -> AsyncConnection:
-    return AsyncConnection(
-        host, port, username, password
-    )
+def create_async_connection(
+    host: str, port: int, username: str, password: str
+) -> AsyncConnection:
+    return AsyncConnection(host, port, username, password)
