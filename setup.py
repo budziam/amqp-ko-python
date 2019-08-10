@@ -1,13 +1,16 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 import os
 import sys
 from setuptools import setup
 
-__version__ = "1.0.0"
+__version__ = "1.0.1"
 
 if sys.argv[-1] == "publish":
     os.system("python setup.py sdist")
     os.system("twine upload dist/*")
-    os.system(f"git tag -a {__version__} -m 'version {__version__}'")
+    os.system("git tag -a %s -m 'version %s'" % (__version__, __version__))
     os.system("git push --tags")
     sys.exit()
 
@@ -20,7 +23,7 @@ setup(
     author="Michał Budziak",
     author_email="michal.mariusz.b@gmail.com",
     url="https://github.com/budziam/amqp-ko-python",
-    download_url="https://github.com/budziam/amqp-ko-python/archive/v_1.0.0.tar.gz",
+    download_url="https://github.com/budziam/amqp-ko-python/archive/%s.tar.gz" % __version__,
     keywords=["amqp-ko", "amqp", "microservice", "rabbitmq", "queue", "tools"],
     install_requires=["aio-pika", "asyncio", "cached-property", "pika"],
     classifiers=[
