@@ -54,7 +54,8 @@ await queue.produce(message)
 ```
 
 ## Installation
-```bashz
+```bash
+pip install amqp-ko
 ```
 
 #### Author: [Michał Budziak]
