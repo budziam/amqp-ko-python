@@ -6,7 +6,7 @@ The recommended way to use AMQP Kø is to create your own queue object. The simp
 
 ### Create queue
 ```python
-from amqp_ko import create_queue, create_async_connection, Message, MessageGate
+from amqp_ko import create_queue, AsyncConnection, Message, MessageGate
 from dataclasses import dataclass
 
 
@@ -26,7 +26,7 @@ message_gates = [
     MessageGate("topic_follow", TopicFollow, unmarshal_topic_follow),
 ]
 
-async with create_async_connection("localhost", 5672, "rabbitmq", "rabbitmq") as connection:
+async with AsyncConnection("localhost", 5672, "rabbitmq", "rabbitmq") as connection:
     queue = await create_queue(connection, "exchange-name", message_gates)
 ```
 

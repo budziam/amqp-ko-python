@@ -3,7 +3,7 @@ from typing import List
 import aio_pika
 
 from amqp_ko.models import MessageGate
-from amqp_ko.queue import Queue, AsyncConnection, MessageGateCollection
+from amqp_ko.queue import Queue, MessageGateCollection
 
 
 async def create_queue(
@@ -26,9 +26,3 @@ async def create_queue(
         message_gate_collection,
         exchange,
     )
-
-
-def create_async_connection(
-    host: str, port: int, username: str, password: str
-) -> AsyncConnection:
-    return AsyncConnection(host, port, username, password)
