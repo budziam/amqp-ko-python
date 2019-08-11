@@ -1,5 +1,5 @@
 from amqp_ko.exceptions import InvalidRoutingKeyException, InvalidMessageTypeException
-from amqp_ko.factories import create_async_connection, create_queue
+from amqp_ko.factories import create_queue
 from amqp_ko.models import (
     Consumer,
     AccumulativeConsumer,

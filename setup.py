@@ -6,7 +6,7 @@ import sys
 import codecs
 from setuptools import setup
 
-__version__ = "1.0.3"
+__version__ = "1.0.4"
 
 
 def read(fname):
