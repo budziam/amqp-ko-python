@@ -50,7 +50,7 @@ class MessageGateCollection:
             if message_gate.message_type == message_type:
                 return message_gate
 
-            raise InvalidMessageTypeException(message_type)
+        raise InvalidMessageTypeException(message_type)
 
 
 class AsyncConnection:
