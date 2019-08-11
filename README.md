@@ -36,9 +36,9 @@ from amqp_ko import Consumer, Job
 
 
 class ConnectUserWithTopic(Consumer):
-    async def consume(self, job: Job):
+    async def consume(self, job: Job[TopicFollow]):
         # Put here some code to connect user with a topic
-        # using "job.message.userId" and "job.message.topicName"
+        # using "job.message.user_id" and "job.message.topic_name"
         await job.ack()
         
 await queue.consume(
